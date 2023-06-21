@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Conversion and Download</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/css/bootstrap.min.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #image-input {
+            margin-bottom: 15px;
+        }
+
+        .output-image {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+
+        .download-link {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .column {
+            float: left;
+            width: 50%;
+        }
+
+        /* Clear floats after the columns */
+        .row:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Conversion and Download</h1>
+        <div class="row">
+            <div class="column">
+                <div class="mb-3">
+                    <label for="image-input" class="form-label">Select Image:</label>
+                    <input type="file" id="image-input" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="photo-type" class="form-label">Photo Type:</label>
+                    <select id="photo-type" class="form-select">
+                        <option value="passport">Passport</option>
+                        <option value="document">Document</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div id="custom-size" style="display: none;">
+                    <div class="mb-3">
+                        <label for="width-input" class="form-label">Width:</label>
+                        <input type="number" id="width-input" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="height-input" class="form-label">Height:</label>
+                        <input type="number" id="height-input" class="form-control">
+                    </div>
+                </div>
+                <button onclick="convertAndDownload('image')" class="btn btn-primary">Convert and Download</button>
+                <img id="output-image" class="output-image">
+                <a id="download-link-image" href="#" download class="download-link" style="display: none;">Download Processed Image</a>
+            </div>
+            <div class="column">
+                <div class="mb-3">
+                    <label for="pdf-input" class="form-label">Select PDF:</label>
+                    <input type="file" id="pdf-input" class="form-control">
+                </div>
+                <button onclick="convertAndDownload('pdf')" class="btn btn-primary">Convert and Download</button>
+                <a id="download-link-pdf" href="#" download class="download-link" style="display: none;">Download Processed PDF</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function convertAndDownload(type) {
+            if (type === 'image') {
+                var fileInput = document.getElementById('image-input');
+                var file = fileInput.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function (event) {
+                    var img = new Image();
+                    img.onload = function () {
+                        var photoType = document.getElementById('photo-type').value;
+                        var width, height;
+
+                        if (photoType === 'passport') {
+                            width = 35;  // Set passport size width in mm
+                            height = 45; // Set passport size height in mm
+                        } else if (photoType === 'document') {
+                            width = 210; // Set document size width in mm
+                            height = 297; // Set document size height in mm
+                        } else if (photoType === 'custom') {
+                            width = parseFloat(document.getElementById('width-input').value);
+                            height = parseFloat(document.getElementById('height-input').value);
+                        }
+
+                        var canvas = document.createElement('canvas');
+                        var ctx = canvas.getContext('2d');
+
+                        var aspectRatio = img.width / img.height;
+                        var targetWidth = width * 3.7795; // Convert mm to pixels at 96dpi
+                        var targetHeight = targetWidth / aspectRatio;
+
+                        canvas.width = targetWidth;
+                        canvas.height = targetHeight;
+                        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+                        var fileFormat = 'png'; // Convert image to PNG format
+                        var filename = 'processed_image.png';
+
+                        downloadImage(canvas, fileFormat, filename, 'image');
+                    };
+
+                    img.src = event.target.result;
+                };
+
+                reader.readAsDataURL(file);
+            } else if (type === 'pdf') {
+                var pdfInput = document.getElementById('pdf-input');
+                var pdfFile = pdfInput.files[0];
+                var pdfReader = new FileReader();
+
+                pdfReader.onload = function (event) {
+                    var pdfBlob = new Blob([event.target.result], { type: 'application/pdf' });
+                    var pdfUrl = URL.createObjectURL(pdfBlob);
+                    var filename = 'processed_pdf.pdf';
+
+                    downloadFile(pdfUrl, filename, 'pdf');
+                };
+
+                pdfReader.readAsArrayBuffer(pdfFile);
+            }
+        }
+
+        function downloadImage(canvas, fileFormat, filename, type) {
+            canvas.toBlob(function (blob) {
+                var downloadLink = document.getElementById('download-link-' + type);
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = filename;
+                downloadLink.style.display = 'block';
+            }, 'image/' + fileFormat);
+        }
+
+        function downloadFile(fileUrl, filename, type) {
+            var downloadLink = document.getElementById('download-link-' + type);
+            downloadLink.href = fileUrl;
+            downloadLink.download = filename;
+            downloadLink.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
